@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Client",
+      "presentation": {
+        "group": "Mod Development - MyMod",
+        "order": 0
+      },
+      "projectName": "MyMod",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@D:\\yuncunchu\\MyMod\\build\\moddev\\clientRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@D:\\yuncunchu\\MyMod\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003d"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Server",
+      "presentation": {
+        "group": "Mod Development - MyMod",
+        "order": 1
+      },
+      "projectName": "MyMod",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@D:\\yuncunchu\\MyMod\\build\\moddev\\serverRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@D:\\yuncunchu\\MyMod\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003d"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    }
+  ]
+}

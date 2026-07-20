@@ -1,0 +1,23 @@
+{
+    "item.examplemod.container_connector": "Container Connector",
+    "itemGroup.examplemod": "Cloud Storage",
+    "itemGroup.examplemod.warehouse": "Cloud Storage",
+    "container.examplemod.warehouse": "Cloud Storage",
+    "container.examplemod.warehouse.large_chest": "Cloud Storage",
+    "container.examplemod.warehouse.inventory": "Inventory",
+    "container.examplemod.name_entry.title": "Name Storage Container",
+    "container.examplemod.name_entry.save": "Save",
+    "container.examplemod.name_entry.cancel": "Cancel",
+    "container.examplemod.name_entry.capacity": "Capacity: %s slots",
+    "container.examplemod.name_entry.field": "Name",
+    "container.examplemod.name_entry.field_tooltip": "Type a name. Leave blank to use the default.",
+    "container.examplemod.edit_linked.title": "Edit Linked Container",
+    "gui.examplemod.warehouse.linked": "Linked",
+    "gui.examplemod.warehouse.upgrade": "Upgrade",
+    "gui.examplemod.warehouse.upgrade_max": "Maxed",
+    "gui.examplemod.upgrade.title": "Cloud Storage - Upgrade",
+    "gui.examplemod.upgrade.submit": "Submit Materials",
+    "gui.examplemod.upgrade.close": "Close",
+    "key.categories.examplemod": "Cloud Storage",
+    "key.examplemod.open_warehouse": "Open Cloud Storage"
+}
