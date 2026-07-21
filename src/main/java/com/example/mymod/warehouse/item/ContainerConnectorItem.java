@@ -69,6 +69,11 @@ public class ContainerConnectorItem extends Item {
         int slotCount = handler != null ? handler.getSlots() : 0;
         if (slotCount <= 0) return InteractionResult.PASS;
 
+        // 注: 不再要求必须有 MenuProvider. 特殊方块 (Mekanism 发电机, 流水线机器等)
+        // 也允许绑定, 服务端在打开时会模拟右键触发其自定义 GUI, 客户端 Mixin
+        // (ClientPacketListenerMixin) 会绕过 1.21.1 的 "Client could not locate tile"
+        // assert, 让任何方块都能被远程打开.
+
         PersonalWarehouseData data = WarehouseDataManager.get(sp);
 
         // 等级上限: 当前等级最多可连接 data.getMaxLinkedContainers() 个世界容器

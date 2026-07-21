@@ -1,7 +1,6 @@
 package com.example.mymod;
 
 import com.example.mymod.warehouse.WarehouseDataManager;
-import com.example.mymod.warehouse.WarehouseEvents;
 import com.example.mymod.warehouse.item.ContainerConnectorItem;
 import com.example.mymod.warehouse.menu.MenuTypes;
 import com.example.mymod.warehouse.network.WarehouseNetworking;
@@ -29,7 +28,7 @@ import java.util.Set;
 
 @Mod(ExampleMod.MOD_ID)
 public class ExampleMod {
-    public static final String MOD_ID = "examplemod";
+    public static final String MOD_ID = "premiumcloudstorage";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     // ---- 仓库模组注册表 ----
@@ -74,7 +73,6 @@ public class ExampleMod {
 
         // 服务端: 注册 SavedData 加载钩子
         WarehouseDataManager.register();
-        WarehouseEvents.register();
 
         // 网络包
         modEventBus.addListener(this::registerPackets);

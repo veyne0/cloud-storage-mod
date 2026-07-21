@@ -21,8 +21,12 @@ public class ClientSetup {
         event.register(MenuTypes.LINKED.get(), LinkedContainerScreen::new);
     }
 
+    private static int tickCount = 0;
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Pre event) {
+        if (++tickCount % 200 == 0) {
+            ExampleMod.LOGGER.info("[Warehouse] ClientSetup.onClientTick fired 200 times (every 10s), checking V key");
+        }
         WarehouseKeybinds.clientTick();
     }
 }

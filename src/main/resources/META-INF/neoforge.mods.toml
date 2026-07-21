@@ -4,24 +4,24 @@ license="MIT"
 showAsResourcePack=false
 
 [[mods]]
-modId="examplemod"
+modId="premiumcloudstorage"
 version="1.0.0"
-displayName="cloud storage"
+displayName="高级云存储"
 authors="veyne"
 description='''
-云存储 - 个人云端仓库, 按 V 键打开, 远距离秒开已连接容器, 5 级升级系统, 最多 100 页 / 5400 格.
+高级云存储 - 个人云端仓库, 按 V 键打开, 远距离秒开已连接容器, 5 级升级系统, 最多 100 页 / 5400 格.
 '''
 
 # 声明本模组依赖 LDLib2 (用于渲染仓库命名 / 升级界面, 解决自实现 GUI 模糊问题).
 # mandatory=false: 玩家没装 ldlib2 也能进游戏, 只是命名/升级功能会不可用.
-[[dependencies.examplemod]]
+[[dependencies.premiumcloudstorage]]
     modId="ldlib2"
     mandatory=false
     versionRange="[2.2.28,)"
     ordering="AFTER"
     side="BOTH"
 
-# Mixin 配置: 告诉 NeoForge 加载 src/main/resources/examplemod.mixins.json
+# Mixin 配置: 告诉 NeoForge 加载 src/main/resources/premiumcloudstorage.mixins.json
 # 这个 mixin 覆盖 AbstractContainerMenu.stillValid 让远距离打开的容器不被自动关闭.
 [[mixins]]
-    config="examplemod.mixins.json"
+    config="premiumcloudstorage.mixins.json"

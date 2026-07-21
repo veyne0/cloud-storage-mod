@@ -1,0 +1,23 @@
+{
+    "item.premiumcloudstorage.container_connector": "Container Connector",
+    "itemGroup.premiumcloudstorage": "Advanced Cloud Storage",
+    "itemGroup.premiumcloudstorage.warehouse": "Advanced Cloud Storage",
+    "container.premiumcloudstorage.warehouse": "Advanced Cloud Storage",
+    "container.premiumcloudstorage.warehouse.large_chest": "Advanced Cloud Storage",
+    "container.premiumcloudstorage.warehouse.inventory": "Inventory",
+    "container.premiumcloudstorage.name_entry.title": "Name Storage Container",
+    "container.premiumcloudstorage.name_entry.save": "Save",
+    "container.premiumcloudstorage.name_entry.cancel": "Cancel",
+    "container.premiumcloudstorage.name_entry.capacity": "Capacity: %s slots",
+    "container.premiumcloudstorage.name_entry.field": "Name",
+    "container.premiumcloudstorage.name_entry.field_tooltip": "Type a name. Leave blank to use the default.",
+    "container.premiumcloudstorage.edit_linked.title": "Edit Linked Container",
+    "gui.premiumcloudstorage.warehouse.linked": "Linked",
+    "gui.premiumcloudstorage.warehouse.upgrade": "Upgrade",
+    "gui.premiumcloudstorage.warehouse.upgrade_max": "Maxed",
+    "gui.premiumcloudstorage.upgrade.title": "Advanced Cloud Storage - Upgrade",
+    "gui.premiumcloudstorage.upgrade.submit": "Submit Materials",
+    "gui.premiumcloudstorage.upgrade.close": "Close",
+    "key.categories.premiumcloudstorage": "Advanced Cloud Storage",
+    "key.premiumcloudstorage.open_warehouse": "Open Advanced Cloud Storage"
+}

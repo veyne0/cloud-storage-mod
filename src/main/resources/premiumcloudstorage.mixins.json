@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.example.mymod.warehouse.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MinecraftScreenMixin",
+    "LevelMixin"
+  ],
+  "server": [
+  ],
+  "mixins": [
+    "BaseContainerBlockEntityMixin",
+    "ServerPlayerMenuMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
