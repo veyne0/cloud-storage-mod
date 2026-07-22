@@ -90,6 +90,57 @@ public final class WarehouseNetworking {
             S2CSyncWarehousePage.STREAM_CODEC,
             S2CSyncWarehousePage.HANDLER
         );
+        // === 实体收容 (Entity Container) ===
+        // 同步收容的实体列表 (S2C)
+        registrar.playToClient(
+            S2CSyncEntityLinks.TYPE,
+            S2CSyncEntityLinks.STREAM_CODEC,
+            S2CSyncEntityLinks.HANDLER
+        );
+        // 收容新实体: 玩家用收容器右键实体后发
+        registrar.playToServer(
+            C2SCaptureEntity.TYPE,
+            C2SCaptureEntity.STREAM_CODEC,
+            C2SCaptureEntity.HANDLER
+        );
+        // 命名收容的实体 (首次)
+        registrar.playToClient(
+            S2COpenEntityNameEntry.TYPE,
+            S2COpenEntityNameEntry.STREAM_CODEC,
+            S2COpenEntityNameEntry.HANDLER
+        );
+        // 召唤 / 召回
+        registrar.playToServer(
+            C2SSummonEntity.TYPE,
+            C2SSummonEntity.STREAM_CODEC,
+            C2SSummonEntity.HANDLER
+        );
+        registrar.playToServer(
+            C2SRecallEntity.TYPE,
+            C2SRecallEntity.STREAM_CODEC,
+            C2SRecallEntity.HANDLER
+        );
+        // 编辑实体 (改名 + 解除)
+        registrar.playToServer(
+            C2SOpenEntityEdit.TYPE,
+            C2SOpenEntityEdit.STREAM_CODEC,
+            C2SOpenEntityEdit.HANDLER
+        );
+        registrar.playToClient(
+            S2COpenEntityEdit.TYPE,
+            S2COpenEntityEdit.STREAM_CODEC,
+            S2COpenEntityEdit.HANDLER
+        );
+        registrar.playToServer(
+            C2SSaveEntityName.TYPE,
+            C2SSaveEntityName.STREAM_CODEC,
+            C2SSaveEntityName.HANDLER
+        );
+        registrar.playToServer(
+            C2SUnlinkEntity.TYPE,
+            C2SUnlinkEntity.STREAM_CODEC,
+            C2SUnlinkEntity.HANDLER
+        );
     }
 
     /** 工具: 服务端发包给指定玩家 (S2C). */

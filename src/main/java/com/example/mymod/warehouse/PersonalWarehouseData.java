@@ -35,6 +35,8 @@ public class PersonalWarehouseData {
     private int level; // 1~5
     private final ItemStackHandler storage;
     private final List<LinkedContainer> linkedContainers = new ArrayList<>();
+    /** 收容的实体列表 (上限按等级: Lv1=2, Lv2=4, Lv3=6, Lv4=8, Lv5=10). */
+    private final List<EntityLink> entityLinks = new ArrayList<>();
     /** 升级进度: 升到 {@code level+1} 需要的每种材料当前交了几个. LinkedHashMap 保序. */
     private final Map<Item, Integer> upgradeProgress = new LinkedHashMap<>();
 
@@ -101,6 +103,31 @@ public class PersonalWarehouseData {
 
     public ItemStackHandler getStorage() { return storage; }
     public List<LinkedContainer> getLinkedContainers() { return linkedContainers; }
+
+    // ============== 收容实体管理 ==============
+
+    public List<EntityLink> getEntityLinks() { return entityLinks; }
+
+    /** 当前等级对应的实体槽位上限. */
+    public int getMaxEntityLinks() {
+        return EntityLink.maxEntityLinksFor(level);
+    }
+
+    public EntityLink addEntityLink(EntityLink link) {
+        entityLinks.add(link);
+        return link;
+    }
+
+    public boolean removeEntityLink(UUID linkId) {
+        return entityLinks.removeIf(c -> c.linkId().equals(linkId));
+    }
+
+    public EntityLink findEntityLink(UUID linkId) {
+        for (EntityLink l : entityLinks) {
+            if (l.linkId().equals(linkId)) return l;
+        }
+        return null;
+    }
 
     // ============== 升级进度 ==============
 
@@ -218,6 +245,14 @@ public class PersonalWarehouseData {
             list.add(c.toNbt(provider));
         }
         tag.put("links", list);
+        // 收容的实体列表
+        if (!entityLinks.isEmpty()) {
+            ListTag elist = new ListTag();
+            for (EntityLink e : entityLinks) {
+                elist.add(e.toNbt(provider));
+            }
+            tag.put("entityLinks", elist);
+        }
         // 升级进度: Map<Item, Integer> → 序列化成一个 ListTag<{id, count}>
         if (!upgradeProgress.isEmpty()) {
             ListTag p = new ListTag();
@@ -242,6 +277,12 @@ public class PersonalWarehouseData {
             ListTag list = tag.getList("links", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 d.linkedContainers.add(LinkedContainer.fromNbt(list.getCompound(i), provider));
+            }
+        }
+        if (tag.contains("entityLinks")) {
+            ListTag elist = tag.getList("entityLinks", Tag.TAG_COMPOUND);
+            for (int i = 0; i < elist.size(); i++) {
+                d.entityLinks.add(EntityLink.fromNbt(elist.getCompound(i), provider));
             }
         }
         if (tag.contains("upgradeProgress")) {

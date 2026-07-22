@@ -1,9 +1,9 @@
 package com.example.mymod.warehouse.screen;
 
 import com.example.mymod.ExampleMod;
-import com.example.mymod.warehouse.client.ClientWarehouseCache;
-import com.example.mymod.warehouse.network.C2SSubmitContainerName;
+import com.example.mymod.warehouse.network.C2SSaveEntityName;
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
+import com.lowdragmc.lowdraglib2.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
@@ -24,50 +24,48 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.UUID;
 
 /**
- * 命名存储容器界面 —— 用 LDLib2 重写, 解决 Minecraft 自带字体在 854x480 小屏下糊的问题.
+ * 收容实体后的首次命名界面 —— 用 LDLib2 重写.
  * <p>
- * 布局:
+ * 流程: 玩家手持实体收容器右键实体 →
+ * {@link com.example.mymod.warehouse.network.C2SCaptureEntity} →
+ * 服务端收容 + 发 {@link com.example.mymod.warehouse.network.S2COpenEntityNameEntry} →
+ * 客户端调 {@link #open(UUID, String, ItemStack)} → LDLib2 ModularUI 接管渲染 →
+ * 点保存发 {@link C2SSaveEntityName} (这里用 defaultName 作为初始值).
+ * <p>
+ * 布局 (与 {@link NameEntryScreen} 类似, 但加 icon + 容量提示):
  * <pre>
  * +--------------------------------------+
- * |         命名存储容器                   |
- * |                                      |
- * |  容量: 27 格                          |
+ * |        命名收容的实体                  |
+ * |  [icon]   §7类型: minecraft:cow      |
  * |                                      |
  * |  名字:  [_________________]          |
  * |                                      |
- * |  留空使用默认名                       |
+ * |  §7留空使用默认名                     |
  * |                                      |
  * |            [ 保存 ]   [ 取消 ]        |
  * +--------------------------------------+
  * </pre>
- *
- * 流程: 服务端发 {@link com.example.mymod.warehouse.network.S2COpenNameEntry} →
- * 客户端调 {@link #open(UUID, String, ItemStack, int)} → LDLib2 ModularUI 接管渲染 →
- * 点保存发 {@link C2SSubmitContainerName} → 服务端写回 link.name.
  */
-public final class NameEntryScreen {
-    /**
-     * 打开本界面时, 把当前屏幕 (一般是仓库主界面) 记到这里. 用户点取消/保存后
-     * 关闭本界面, 调 {@link #goBack(Minecraft)} 回到这里记的屏幕, 而不是直接关游戏.
-     */
+public final class EntityNameEntryScreen {
     private static Screen parent;
 
-    private NameEntryScreen() {}
+    private EntityNameEntryScreen() {}
 
-    public static void open(UUID linkId, String defaultName, ItemStack iconStack, int slots) {
-        open(linkId, defaultName, iconStack, slots, Minecraft.getInstance().screen);
+    public static void open(UUID linkId, String defaultName, ItemStack iconStack) {
+        open(linkId, defaultName, iconStack, Minecraft.getInstance().screen);
     }
 
-    public static void open(UUID linkId, String defaultName, ItemStack iconStack, int slots, Screen parentScreen) {
+    public static void open(UUID linkId, String defaultName, ItemStack iconStack, Screen parentScreen) {
         parent = parentScreen;
         Minecraft mc = Minecraft.getInstance();
-        ModularUI modularUI = buildUI(linkId, defaultName, slots, mc);
-        // 标题用 Component.literal 让 LDLib2 显示在屏幕标题栏
+        com.example.mymod.ExampleMod.LOGGER.info(
+            "[EntityNameEntry] open: linkId={} defaultName={} parent={}",
+            linkId, defaultName, parentScreen == null ? "null" : parentScreen.getClass().getSimpleName());
+        ModularUI modularUI = buildUI(linkId, defaultName, iconStack, mc);
         mc.setScreen(new ModularUIScreen(modularUI,
-            Component.translatable("container." + ExampleMod.MOD_ID + ".name_entry.title")));
+            Component.translatable("container." + ExampleMod.MOD_ID + ".entity_name_entry.title")));
     }
 
-    /** 关掉自己, 回到 {@link #parent} (如果还在, 否则关到根). */
     private static void goBack(Minecraft mc) {
         if (parent != null) {
             mc.setScreen(parent);
@@ -77,46 +75,54 @@ public final class NameEntryScreen {
         }
     }
 
-    private static ModularUI buildUI(UUID linkId, String defaultName, int slots, Minecraft mc) {
-        // 根容器: 居中漂浮 (zIndex 提到顶层), 限制宽高, 白色背景
+    private static ModularUI buildUI(UUID linkId, String defaultName, ItemStack iconStack, Minecraft mc) {
         UIElement root = new UIElement();
-        root.setId("name-entry-root");
+        root.setId("entity-name-entry-root");
         root.layout(l -> l
-            .width(320).height(190)
+            .width(320).height(180)
             .paddingAll(14)
             .flexDirection(FlexDirection.COLUMN)
             .alignItems(AlignItems.CENTER)
             .gapAll(8));
-        root.style(s -> s.background(Sprites.BORDER)); // 浅灰 GDP 边框
+        root.style(s -> s.background(Sprites.BORDER));
 
         // 标题
         Label title = new Label();
-        title.setText(Component.literal("命名存储容器"));
+        title.setText(Component.translatable("container." + ExampleMod.MOD_ID + ".entity_name_entry.title"));
         title.textStyle(s -> s.textAlignHorizontal(Horizontal.CENTER).textShadow(true));
         title.layout(l -> l.height(14).widthPercent(100));
         root.addChild(title);
 
-        // 容量描述: 0 表示"无法用 ItemHandler 拿到容量" (如 Mekanism 设备),
-        // 显示 "?" 而不是 "0 格", 免得玩家误以为这容器没空间.
-        Label cap = new Label();
-        String capText = slots > 0 ? ("容量: " + slots + " 格") : "容量: ? 格 (特殊容器, 实际槽位以原版界面为准)";
-        cap.setText(Component.literal(capText));
-        cap.textStyle(s -> s.textAlignHorizontal(Horizontal.CENTER));
-        cap.layout(l -> l.height(12).widthPercent(100));
-        root.addChild(cap);
+        // 信息行: 图标 + 默认名
+        UIElement infoRow = new UIElement();
+        infoRow.layout(l -> l
+            .flexDirection(FlexDirection.ROW)
+            .widthPercent(100).height(28)
+            .alignItems(AlignItems.CENTER)
+            .gapAll(10));
+        UIElement iconBox = new UIElement();
+        iconBox.layout(l -> l.width(24).height(24));
+        iconBox.style(s -> s.background(new ItemStackTexture(iconStack)));
+        infoRow.addChild(iconBox);
+        Label nameLabel = new Label();
+        nameLabel.setText(Component.literal("§7默认: " + (defaultName == null ? "" : defaultName)));
+        nameLabel.textStyle(s -> s.textAlignHorizontal(Horizontal.LEFT));
+        nameLabel.layout(l -> l.flex(1).height(14));
+        infoRow.addChild(nameLabel);
+        root.addChild(infoRow);
 
-        // 名字输入行 (Label + TextField)
+        // 名字输入行
         UIElement nameRow = new UIElement();
         nameRow.layout(l -> l
             .flexDirection(FlexDirection.ROW)
             .widthPercent(100).height(20)
             .alignItems(AlignItems.CENTER)
             .gapAll(8));
-        Label nameLabel = new Label();
-        nameLabel.setText(Component.literal("名字:"));
-        nameLabel.textStyle(s -> s.textAlignHorizontal(Horizontal.LEFT));
-        nameLabel.layout(l -> l.width(40).height(14));
-        nameRow.addChild(nameLabel);
+        Label nameLabel2 = new Label();
+        nameLabel2.setText(Component.literal("名字:"));
+        nameLabel2.textStyle(s -> s.textAlignHorizontal(Horizontal.LEFT));
+        nameLabel2.layout(l -> l.width(40).height(14));
+        nameRow.addChild(nameLabel2);
         TextField nameField = new TextField();
         nameField.setValue((defaultName == null) ? "" : defaultName, false);
         nameField.setTextResponder(s -> { /* 实时存储, 这里不处理, 保存时取 */ });
@@ -145,9 +151,10 @@ public final class NameEntryScreen {
         saveBtn.setOnClick(e -> {
             String v = nameField.getValue();
             if (v == null) v = (defaultName == null) ? "" : defaultName;
-            PacketDistributor.sendToServer(new C2SSubmitContainerName(linkId, v));
-            ClientWarehouseCache.clearPending();
-            // 保存后直接关闭屏幕, 回到上级 (一般是仓库主界面)
+            // 把名字写回 link (即使是空, 服务端会 fallback 到实体类型名)
+            PacketDistributor.sendToServer(new C2SSaveEntityName(linkId, v));
+            // 清掉 pending
+            com.example.mymod.warehouse.client.ClientWarehouseCache.clearPendingEntityName();
             goBack(mc);
         });
         btnRow.addChild(saveBtn);
@@ -156,7 +163,7 @@ public final class NameEntryScreen {
         cancelBtn.setText("取消");
         cancelBtn.layout(l -> l.width(80).height(20));
         cancelBtn.setOnClick(e -> {
-            ClientWarehouseCache.clearPending();
+            com.example.mymod.warehouse.client.ClientWarehouseCache.clearPendingEntityName();
             goBack(mc);
         });
         btnRow.addChild(cancelBtn);

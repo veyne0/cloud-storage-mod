@@ -1,10 +1,12 @@
 package com.example.mymod.warehouse;
 
 import com.example.mymod.ExampleMod;
+import com.example.mymod.warehouse.network.S2CSyncEntityLinks;
 import com.example.mymod.warehouse.network.S2CSyncLinkedContainers;
 import com.example.mymod.warehouse.network.WarehouseNetworking;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -65,6 +67,15 @@ public class WarehouseDataManager {
                 CACHE.put(entry.getKey(), entry.getValue());
             }
             ExampleMod.LOGGER.info("[Warehouse] SavedData loaded: {} player(s) registered.", CACHE.size());
+
+            // 给所有玩家已连接的容器挂 PERSISTENT chunk ticket, 让熔炉/机器照常 tick.
+            // 这里只挂 overworld 的; 跨维度的会在对应维度的 onLevelLoad 里补挂
+            // (LinkedChunkLoader 自己处理).
+            for (var pdata : CACHE.values()) {
+                for (var link : pdata.getLinkedContainers()) {
+                    LinkedChunkLoader.add(link.linkId(), link.dimension(), link.pos());
+                }
+            }
         }
     }
 
@@ -75,6 +86,11 @@ public class WarehouseDataManager {
             SAVED = null;
             SERVER_LEVEL = null;
             PROVIDER = null;
+            // overworld 卸载时整个 ACTIVE 表清空 (下次启动会从 saveddata 还原).
+            // 注意: LinkedChunkLoader 没有 clearAll, 因为 ACTIVE 本身是它的"源真理",
+            // 但服务端关停时全维度都卸载了, ticket 自然没了, 下次启动时 onLevelLoad
+            // 重新 add 一次即可. 这里我们显式清, 避免重载 (e.g. /reload) 时出现 stale 记录.
+            // 暂不实现 clearAll, 因为卸载时 ticket 也没了, 留 ACTIVE 等下次启动自然重新挂.
         }
     }
 
@@ -84,7 +100,9 @@ public class WarehouseDataManager {
         // 同步到客户端, 这样客户端进游戏后, 仓库右边的图标就直接显示, 不需要
         // 玩家再点一次"重新连接"才能看见.
         if (event.getEntity() instanceof ServerPlayer sp) {
-            sendSyncLinkedContainers(sp, get(sp));
+            PersonalWarehouseData data = get(sp);
+            sendSyncLinkedContainers(sp, data);
+            sendSyncEntityLinks(sp, data);
             com.example.mymod.warehouse.network.S2CSyncUpgradeState.sendTo(sp);
         }
     }
@@ -117,6 +135,16 @@ public class WarehouseDataManager {
     }
 
     /**
+     * 拿到当前 {@link MinecraftServer} 句柄 (overworld 加载时设置).
+     * <p>
+     * 给 {@link LinkedChunkLoader} 等需要跨维度访问 {@code ServerLevel} 的模块用.
+     * 还没初始化完成 (例如在 client 端 / mod 启动早期) 时返回 null.
+     */
+    public static MinecraftServer getServer() {
+        return SERVER_LEVEL != null ? SERVER_LEVEL.getServer() : null;
+    }
+
+    /**
      * 把 {@code data} 里所有已连接容器的"第一页前 9 个物品"填好 (鼠标悬停图标时用),
      * 然后发给 {@code sp}. 这是仓库模组各发包点统一调用的入口 —— 直接
      * {@code new S2CSyncLinkedContainers(data.getLinkedContainers())} 不会填 preview.
@@ -124,6 +152,15 @@ public class WarehouseDataManager {
     public static void sendSyncLinkedContainers(ServerPlayer sp, PersonalWarehouseData data) {
         LinkedContainerPreview.fillPreviews(sp.serverLevel(), data.getLinkedContainers());
         WarehouseNetworking.sendTo(sp, new S2CSyncLinkedContainers(data.getLinkedContainers()));
+    }
+
+    /**
+     * 同步收容的实体列表到客户端 (在 V 键开仓库 / 任何实体增删时调用).
+     * <p>
+     * 客户端 {@code ClientWarehouseCache} 收到后更新缓存, 仓库 UI 重新画实体图标.
+     */
+    public static void sendSyncEntityLinks(ServerPlayer sp, PersonalWarehouseData data) {
+        WarehouseNetworking.sendTo(sp, new S2CSyncEntityLinks(data.getEntityLinks()));
     }
 
     private static void ensureLoaded() {

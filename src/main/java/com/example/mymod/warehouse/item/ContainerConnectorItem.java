@@ -1,6 +1,7 @@
 package com.example.mymod.warehouse.item;
 
 import com.example.mymod.ExampleMod;
+import com.example.mymod.warehouse.LinkedChunkLoader;
 import com.example.mymod.warehouse.LinkedContainer;
 import com.example.mymod.warehouse.PersonalWarehouseData;
 import com.example.mymod.warehouse.WarehouseDataManager;
@@ -62,12 +63,25 @@ public class ContainerConnectorItem extends Item {
         BlockEntity be = level.getBlockEntity(pos);
         if (be == null) return InteractionResult.PASS;
 
-        // 检查目标方块是否有 ITEM_HANDLER 能力 (NeoForge 1.21.1: BlockEntity.getCapability 没了,
-        // 改用 BlockCapability 的静态方法)
+        // 允许连接的条件 (满足任一即可):
+        //   1. ItemHandler capability 有 slot (典型: 箱子/桶/潜影盒/熔炉/漏斗等)
+        //   2. 实现 MenuProvider (有 GUI 但没暴露 ItemHandler, 如 Mekanism 机器、
+        //      各种 mod 设备)
+        //   3. 任何有 BlockEntity 的方块 — 兜底连接, 打开时服务端会模拟 useWithoutItem
+        //      触发原版/原 mod 的 GUI 逻辑 (附魔台/工作台/切石机/织布机等)
+        //
+        // 之前只看 ItemHandler + MenuProvider, 导致附魔台/工作台/切石机这些
+        // "BlockState.getMenuProvider 返回 null, 但右键会开 GUI" 的方块
+        // 连不上. 现在放宽: 任何有 BE 的方块都能连, 打开走 useWithoutItem 路径.
+        int slotCount = 0;
         var handler = Capabilities.ItemHandler.BLOCK.getCapability(
             level, pos, be.getBlockState(), be, null);
-        int slotCount = handler != null ? handler.getSlots() : 0;
-        if (slotCount <= 0) return InteractionResult.PASS;
+        if (handler != null) {
+            slotCount = handler.getSlots();
+        }
+        boolean hasMenuProvider = be.getBlockState().getMenuProvider(level, pos) != null;
+        // 不再要求必须有 ItemHandler/MenuProvider: 兜底连接所有有 BE 的方块
+        // (c.f. 之前 if (slotCount <= 0 && !hasMenuProvider) return PASS 的早期返回)
 
         // 注: 不再要求必须有 MenuProvider. 特殊方块 (Mekanism 发电机, 流水线机器等)
         // 也允许绑定, 服务端在打开时会模拟右键触发其自定义 GUI, 客户端 Mixin
@@ -90,6 +104,8 @@ public class ContainerConnectorItem extends Item {
             if (sp.isShiftKeyDown()) {
                 // 潜行 → 断开
                 data.removeLink(existing.linkId());
+                // 摘掉 PERSISTENT chunk ticket, 让该 chunk 在玩家离开后能正常卸载
+                LinkedChunkLoader.remove(existing.linkId());
                 sp.sendSystemMessage(Component.literal(
                     "§a[云存储] 已断开对 §f" + existing.name() + " §a的连接"));
                 WarehouseDataManager.setDirty();
@@ -109,6 +125,10 @@ public class ContainerConnectorItem extends Item {
             linkId, defaultName, sp.level().dimension(), pos, slotCount, blockId);
         data.addLink(link);
         WarehouseDataManager.setDirty();
+
+        // 挂 PERSISTENT chunk ticket: 让容器所在 chunk 一直保持加载, 熔炉/机器照常 tick
+        // 玩家走到天涯海角/去其他维度, 都不影响这个 chunk 工作
+        LinkedChunkLoader.add(linkId, sp.level().dimension(), pos);
 
         // 没有 Item.asItem() 的方块会返回 AIR, fallback 到 BARRIER 当图标
         Item blockItem = be.getBlockState().getBlock().asItem();

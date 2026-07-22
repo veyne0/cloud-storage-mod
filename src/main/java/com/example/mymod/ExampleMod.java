@@ -1,7 +1,9 @@
 package com.example.mymod;
 
+import com.example.mymod.warehouse.LinkedChunkLoader;
 import com.example.mymod.warehouse.WarehouseDataManager;
 import com.example.mymod.warehouse.item.ContainerConnectorItem;
+import com.example.mymod.warehouse.item.EntityContainerItem;
 import com.example.mymod.warehouse.menu.MenuTypes;
 import com.example.mymod.warehouse.network.WarehouseNetworking;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -41,13 +43,20 @@ public class ExampleMod {
         "container_connector",
         () -> new ContainerConnectorItem(new Item.Properties().stacksTo(1))
     );
+    public static final DeferredItem<EntityContainerItem> ENTITY_CONTAINER = WAREHOUSE_ITEMS.register(
+        "entity_container",
+        EntityContainerItem.ENTITY_CONTAINER_ITEM
+    );
 
     public static final java.util.function.Supplier<CreativeModeTab> WAREHOUSE_TAB =
         WAREHOUSE_TABS.register("warehouse_tab", () -> CreativeModeTab.builder()
             .title(net.minecraft.network.chat.Component.translatable("itemGroup." + ExampleMod.MOD_ID + ".warehouse"))
             .icon(() -> new ItemStack(CONTAINER_CONNECTOR.get()))
             // displayItems 自己 tab 加一份 (走原版的 CreativeModeTab.Output.accept 路径)
-            .displayItems((params, output) -> output.accept(CONTAINER_CONNECTOR.get()))
+            .displayItems((params, output) -> {
+                output.accept(CONTAINER_CONNECTOR.get());
+                output.accept(ENTITY_CONTAINER.get());
+            })
             .build());
 
     /**
@@ -73,6 +82,8 @@ public class ExampleMod {
 
         // 服务端: 注册 SavedData 加载钩子
         WarehouseDataManager.register();
+        // 服务端: 给每个已连接容器挂 PERSISTENT chunk ticket (熔炉照常烧)
+        LinkedChunkLoader.register();
 
         // 网络包
         modEventBus.addListener(this::registerPackets);
@@ -94,6 +105,7 @@ public class ExampleMod {
         ResourceKey<CreativeModeTab> key = event.getTabKey();
         if (key.equals(CreativeModeTabs.TOOLS_AND_UTILITIES) && processedTabs.add(key)) {
             event.accept(CONTAINER_CONNECTOR.get());
+            event.accept(ENTITY_CONTAINER.get());
         }
     }
 
